@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>디지털 화선지 - 웹 기반 한국화 드로잉 툴</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+    <link rel="stylesheet" href="korean-painting-styles.css">
+</head>
+<body>
+    <div id="app">
+        <!-- 헤더 -->
+        <header class="header">
+            <h1 class="title">디지털 화선지</h1>
+            <div class="header-controls">
+                <button id="toggleUI" class="btn-icon" title="UI 패널 토글">
+                    <span>≡</span>
+                </button>
+                <button id="saveProject" class="btn" title="프로젝트 저장">저장</button>
+                <button id="loadProject" class="btn" title="프로젝트 불러오기">불러오기</button>
+                <button id="exportPNG" class="btn" title="PNG로 내보내기">내보내기</button>
+            </div>
+        </header>
+
+        <div class="main-container">
+            <!-- 좌측 도구 패널 -->
+            <aside id="toolPanel" class="tool-panel">
+                <!-- 붓 도구 -->
+                <section class="tool-section">
+                    <h3>붓 도구</h3>
+                    <div class="tool-group">
+                        <button id="brushTool" class="tool-btn active" data-tool="brush">붓</button>
+                        <button id="pencilTool" class="tool-btn" data-tool="pencil">연필</button>
+                        <button id="eraserTool" class="tool-btn" data-tool="eraser">지우개</button>
+                    </div>
+                </section>
+
+                <!-- 색상 팔레트 (오방색) -->
+                <section class="tool-section">
+                    <h3>오방색 팔레트</h3>
+                    <div class="color-palette" id="colorPalette">
+                        <div class="color-group">
+                            <h4>오방정색</h4>
+                            <div class="color-grid">
+                                <div class="color-swatch active" data-color="#000000" title="흑(黑)" style="background-color: #000000;"></div>
+                                <div class="color-swatch" data-color="#FF0000" title="적(赤)" style="background-color: #FF0000;"></div>
+                                <div class="color-swatch" data-color="#0000FF" title="청(靑)" style="background-color: #0000FF;"></div>
+                                <div class="color-swatch" data-color="#FFFFFF" title="백(白)" style="background-color: #FFFFFF; border: 1px solid #ccc;"></div>
+                                <div class="color-swatch" data-color="#FFD700" title="황(黃)" style="background-color: #FFD700;"></div>
+                            </div>
+                        </div>
+                        <div class="color-group">
+                            <h4>오간색</h4>
+                            <div class="color-grid">
+                                <div class="color-swatch" data-color="#008000" title="녹(綠)" style="background-color: #008000;"></div>
+                                <div class="color-swatch" data-color="#00FFFF" title="벽(碧)" style="background-color: #00FFFF;"></div>
+                                <div class="color-swatch" data-color="#FFC0CB" title="홍(紅)" style="background-color: #FFC0CB;"></div>
+                                <div class="color-swatch" data-color="#800080" title="자(紫)" style="background-color: #800080;"></div>
+                                <div class="color-swatch" data-color="#E4D00A" title="유황(硫黃)" style="background-color: #E4D00A;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 붓 속성 -->
+                <section class="tool-section">
+                    <h3>붓 속성</h3>
+                    <div class="control-group">
+                        <label for="brushSize">크기</label>
+                        <input type="range" id="brushSize" min="1" max="100" value="10">
+                        <span id="brushSizeValue">10</span>
+                    </div>
+                    <div class="control-group">
+                        <label for="brushOpacity">투명도</label>
+                        <input type="range" id="brushOpacity" min="0" max="100" value="100">
+                        <span id="brushOpacityValue">100%</span>
+                    </div>
+                    <div class="control-group">
+                        <label for="bleedFactor">먹 번짐</label>
+                        <input type="range" id="bleedFactor" min="0" max="100" value="50">
+                        <span id="bleedFactorValue">50%</span>
+                    </div>
+                    <div class="control-group">
+                        <label for="textureStrength">질감 강도</label>
+                        <input type="range" id="textureStrength" min="0" max="100" value="70">
+                        <span id="textureStrengthValue">70%</span>
+                    </div>
+                </section>
+
+                <!-- 낙관 도구 -->
+                <section class="tool-section">
+                    <h3>낙관 (도장)</h3>
+                    <button id="sealDesigner" class="btn full-width">낙관 디자인</button>
+                    <button id="applySeal" class="btn full-width" disabled>도장 찍기</button>
+                </section>
+            </aside>
+
+            <!-- 중앙 캔버스 영역 -->
+            <main class="canvas-container">
+                <div class="canvas-wrapper">
+                    <canvas id="drawingCanvas"></canvas>
+                </div>
+                
+                <!-- 하단 컨트롤 -->
+                <div class="canvas-controls">
+                    <button id="undo" class="btn-icon" title="실행 취소">↶</button>
+                    <button id="redo" class="btn-icon" title="다시 실행">↷</button>
+                    <span class="separator">|</span>
+                    <button id="zoomIn" class="btn-icon" title="확대">+</button>
+                    <button id="zoomOut" class="btn-icon" title="축소">-</button>
+                    <button id="zoomReset" class="btn-icon" title="원래 크기">100%</button>
+                </div>
+            </main>
+
+            <!-- 우측 레이어 패널 -->
+            <aside id="layerPanel" class="layer-panel">
+                <section class="tool-section">
+                    <h3>레이어</h3>
+                    <div class="layer-controls">
+                        <button id="addLayer" class="btn small">레이어 추가</button>
+                        <button id="deleteLayer" class="btn small">삭제</button>
+                        <button id="mergeLayer" class="btn small">병합</button>
+                    </div>
+                    <div id="layerList" class="layer-list">
+                        <div class="layer-item active" data-layer-id="0">
+                            <span class="layer-visibility" title="표시/숨김">👁</span>
+                            <span class="layer-name">메인 레이어</span>
+                        </div>
+                    </div>
+                </section>
+            </aside>
+        </div>
+    </div>
+
+    <!-- 낙관 디자인 모달 -->
+    <div id="sealModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>낙관 (도장) 디자인</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="seal-canvas-container">
+                    <canvas id="sealCanvas" width="200" height="200"></canvas>
+                </div>
+                <div class="seal-controls">
+                    <div class="control-group">
+                        <label for="sealText">텍스트</label>
+                        <input type="text" id="sealText" placeholder="도장에 들어갈 텍스트">
+                    </div>
+                    <div class="control-group">
+                        <label for="sealEffect">효과</label>
+                        <select id="sealEffect">
+                            <option value="emboss">양각 (볼록)</option>
+                            <option value="deboss">음각 (오목)</option>
+                        </select>
+                    </div>
+                    <div class="control-group">
+                        <label for="sealShape">모양</label>
+                        <select id="sealShape">
+                            <option value="circle">원형</option>
+                            <option value="square">사각형</option>
+                            <option value="free">자유형</option>
+                        </select>
+                    </div>
+                    <div class="seal-actions">
+                        <button id="saveSeal" class="btn">저장</button>
+                        <button id="cancelSeal" class="btn secondary">취소</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- 파일 입력 (숨김) -->
+    <input type="file" id="fileInput" accept=".json" style="display: none;">
+
+    <script src="korean-painting-app.js"></script>
+</body>
+</html>
